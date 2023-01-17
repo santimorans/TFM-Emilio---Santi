@@ -13,10 +13,14 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
+from dash.long_callback import DiskcacheLongCallbackManager
+import diskcache
+cache = diskcache.Cache("./cache")
+long_callback_manager = DiskcacheLongCallbackManager(cache)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets,suppress_callback_exceptions=True)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets,long_callback_manager=long_callback_manager,suppress_callback_exceptions=True)
 
 app.layout = html.Div([    
                 html.Div([
@@ -46,22 +50,23 @@ def form_login_broker(value):
     if value=='iBROKER':
         form_login = html.Div([
         html.Br(),
-        dcc.Input(id="user_ibroker", type="text", placeholder="Usuario iBROKER", debounce=True),
+        dcc.Input(id="user", type="text", placeholder="Usuario iBROKER", debounce=True),
         html.Br(),
         html.Br(),
-        dcc.Input(id="password_ibroker", type="password", placeholder="Contraseña iBROKER", debounce=True),    
+        dcc.Input(id="password", type="password", placeholder="Contraseña iBROKER", debounce=True),    
         html.Br(),
         html.Br(),
         html.Button("Iniciar sesión", id="btn_login"),
         html.Div('Cuando presiones "Iniciar sesión", se comprobará que la contraseña es correcta en el bróker y que la tenemos actualizada, tardaremos unos segundos'),
+        html.Div(id='NIF',children=[])
         ]),
     elif value=='renta4banco':
         form_login = html.Div([        
         html.Br(),
-        dcc.Input(id="user_renta4", type="text", placeholder="Usuario renta4banco", debounce=True),
+        dcc.Input(id="user", type="text", placeholder="Usuario renta4banco", debounce=True),
         html.Br(),
         html.Br(),
-        dcc.Input(id="password_renta4", type="password", placeholder="Contraseña renta4banco", debounce=True),
+        dcc.Input(id="password", type="password", placeholder="Contraseña renta4banco", debounce=True),
         html.Br(),
         html.Br(),
         dcc.Input(id="NIF", type="text", placeholder="NIF/CIF", debounce=True),    
@@ -77,8 +82,8 @@ def form_login_broker(value):
 @app.callback(
     dash.dependencies.Output('algoritmos_ibroker', 'children'),
     [dash.dependencies.Input("btn_login", "n_clicks"),
-    dash.dependencies.Input('user_ibroker', 'value'),
-    dash.dependencies.Input('password_ibroker', 'value')]
+    dash.dependencies.Input('user', 'value'),
+    dash.dependencies.Input('password', 'value')]
     )
 
 def password_control_ibroker(n_clicks,user,password):
@@ -128,13 +133,14 @@ def password_control_ibroker(n_clicks,user,password):
         
     return algoritmos
 
-@app.callback(
+@app.long_callback(
     dash.dependencies.Output('algoritmos_renta4', 'children'),
     [dash.dependencies.Input("btn_login", "n_clicks"),
-    dash.dependencies.Input('user_renta4', 'value'),
-    dash.dependencies.Input('password_renta4', 'value'),
+    dash.dependencies.Input('user', 'value'),
+    dash.dependencies.Input('password', 'value'),
     dash.dependencies.Input('NIF', 'value')
-    ]
+    ],
+    prevent_initial_call=True
     )
 def password_control_renta4(n_clicks,user,password,nif):
     
